@@ -1,0 +1,46 @@
+apiVersion: mahjong.io/v1alpha1
+kind: Tile
+metadata:
+  name: gitea
+  category: ContainerApplication
+  version: 1.11.5
+  dependentOnVendorService: EKS
+# Specification
+spec:
+  preRun:
+    stages:
+      - name: gitea.1.11
+        command: |
+          cd $TILE_HOME
+          kubectl create ns gitea
+          helm install gitea lib/gitea-helm-chart -n gitea
+          kubectl get svc -n gitea
+          kubectl get pods -n gitea
+
+  inputs:
+    # String
+    - name: clusterName
+      inputType: String
+      require: true
+    # String
+    - name: masterRoleARN
+      inputType: String
+      require: true
+
+    # Ouptputs represnt output value after launched, for 'ContainerApplication' might need leverage specific command to retrive output.
+  outputs:
+    # String
+    - name: installedNamespace
+      outputType: String
+      defaultValue: gitea
+      description: Custom::String
+    - name: giteaAddres
+      outputType: String
+      defaultValueCommand: kubectl get svc --namespace gitea gitea-gitea-http -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+      description: Custom::String
+    - name: Port
+      outputType: String
+      defaultValueCommand: kubectl get svc --namespace gitea gitea-gitea-http -o jsonpath='{.spec.ports[0].port}'
+      description: Custom::String
+
+  notes: []
